@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime as dt
 from statsmodels.tsa.stattools import adfuller
-# from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.arima_model import ARIMA
+
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import plotly.graph_objects as go
 
@@ -37,13 +36,14 @@ def plot_timeseries(dataslice,title,xlabel,ylabel):
 
 	pd.plotting.register_matplotlib_converters()
 	plt.figure(figsize=(16,5))
-	plt.plot(dataslice.index,dataslice['Close'],color='tab:red',label = 'stock-Price')
+	plt.plot(dataslice.index,dataslice['Close'],color='tab:blue',label = 'Stock Price')
 	plt.grid(True)
 	# plt.xticks(range(0,dataslice.shape[0],100),dataslice['timestamp'].loc[::100],rotation=45)
 	# # plt.gca().set(title=title, xlabel=xlabel, ylabel=ylabel)
 	# # plt.show()
 	plt.xlabel('Date',fontsize=18)
 	plt.ylabel('Close Price',fontsize=18)
+	# plt.xscale('log')
 	plt.legend(loc=2)
 	plt.show()
 
@@ -85,7 +85,7 @@ def plotMA(dataslice):
 
 					# print(dataslice)
 
-					plt.figure(figsize=(16,5))
+					plt.figure(figsize=(16,6))
 					plt.subplot(3,1,1)
 					plt.grid(True)
 					plt.plot(dataslice.index,dataslice['Close'],label='data')	

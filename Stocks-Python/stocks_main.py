@@ -76,13 +76,19 @@ def read_stock():
 
 					if dt.strptime(data.index[-1],'%Y-%m-%d').date() == dt.now().date():
 						
-						print('Using Existing Data')
-						print(data.index[-1])
+						print('Using Existing Data...')
+						# print(data.index[-1])
+						print('--'*25)
+						data.index = pd.to_datetime(data.index)
+						print('Data loading for '+symbol+' stock Completed...')
+					
+						print('Data was found for dates '+str(data.index[0])+' to '+str(data.index[-1]))
+
 						
 						
 					else:
 						# print('in else')
-						print('loading partial data')
+						print('Loading partial data...')
 						start = dt.strftime(dt.strptime(data.index[-1],'%Y-%m-%d').date() ,'%Y-%m-%d')
 						end = dt.now().strftime('%Y-%m-%d')
 						
