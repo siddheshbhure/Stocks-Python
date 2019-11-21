@@ -7,7 +7,7 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn import linear_model
 
-
+#gets the P value for Ad Fuller
 def get_stationarity(timeseries):
    
     # Dickey–Fuller test:
@@ -20,18 +20,91 @@ def get_stationarity(timeseries):
 
     return result[1]
 
-def predict_price(dates,prices,x):
+def getPredictionLIN(dataslice):
+
+	try:
+
+		dataslice_lin = dataslice.copy()
+		dataslice_lin.reset_index()
+		dataslice_lin.index = range(len(dataslice_lin))
+
+		dates = dataslice_lin.index.tolist()
+		prices = dataslice_lin['Close'].tolist()
+		
+		linear_mod = linear_model.LinearRegression() #defines the linear reg. model
+		dates = np.reshape(dates,(len(dates),1)) # converts to an n * 1 matrix to provide to the function
+		prices = np.reshape(prices,(len(prices),1))
+		linear_mod.fit(dates,prices) #fits the data points into model
+		
+
+		pred_fl = True
+		while pred_fl:
+			pred_date = input('Enter a date in YYYY-MM-DD format for which you would like stock prediction. \'0\' to go back to previous menu.\n')
+			if pred_date != '0':
+				diff = (dt.strptime(pred_date,'%Y-%m-%d') - dataslice.index[0]).days
+				print('diff = '+str(diff))
+
+				predicted_price =linear_mod.predict(np.array(diff).reshape(1, 1))
+
+				# return predicted_price[0][0],linear_mod.coef_[0][0] ,linear_mod.intercept_[0]
+
+				# predicted_price, coeff, constant = predict_price(dataslice,diff)
+				print('--'*25)
+				print()
+				print ('The stock Close price for'+ pred_date +' is = ',str(predicted_price[0][0]))
+				print ('The regression coefficient is ',str(linear_mod.coef_[0][0]),", and the constant is = ", str(linear_mod.intercept_[0]))
+				print ('Equation between dates and prices is: price = ',str(linear_mod.coef_[0][0]),'* date + ',str(inear_mod.intercept_[0]))
+				print()
+				print('--'*25)
+			else:
+				pred_fl = False
+
+
+
+	except Exception as e:
+		print('--'*25)
+		print(e)
+		print('--'*25)
+
 
 	
-	linear_mod = linear_model.LinearRegression() #defining the linear regression model
-	dates = np.reshape(dates,(len(dates),1)) # converting to matrix of n X 1
-	prices = np.reshape(prices,(len(prices),1))
-	linear_mod.fit(dates,prices) #fitting the data points in the model
-	predicted_price =linear_mod.predict(np.array(x).reshape(1, 1))
-	return predicted_price[0][0],linear_mod.coef_[0][0] ,linear_mod.intercept_[0]
+	# print(dataslice_lin)
+	# predicted_price, coeff, constant = predict_price(dataslice_lin.index.tolist(),dataslice_lin['Close'].tolist(),diff)
+
+	
+	
+	
 
 
-def getPredictionARIMA(dataslice,d,steps):
+# Incorportes ARIMA model to provide stock value prediction for date entered
+def getPredictionARIMA(dataslice):
+
+	print('Making Data Stationary...')
+	dataslice_log = np.log(dataslice)
+	p_val = get_stationarity(dataslice)
+	# print(p_val)
+	
+	d = 0
+	# makes data stationary before as required for applying ARIMA
+	while p_val > 0.05:
+		
+		d=d+1
+		
+		rolling_mean = dataslice_log.rolling(window=15).mean()
+		dataslice_log_minus_mean = dataslice_log - rolling_mean
+		dataslice_log_minus_mean.dropna(inplace=True)
+
+		dataslice_log = dataslice_log_minus_mean.copy()
+
+		p_val = get_stationarity(dataslice_log_minus_mean)
+
+	d = d if d > 0 else 1
+
+	print('Selected Diffentiating Order is ='+str(d))
+	print('Applying Model on Training Data...')
+	print('--'*25)
+
+	steps = -30				#Forecasts the value for last month to obtain RMSE
 
 	y_truth = dataslice[int(steps):]
 	
@@ -39,18 +112,9 @@ def getPredictionARIMA(dataslice,d,steps):
 	model = SARIMAX(dataslice['Close'], trend = 'c',order=(2,d,2))
 	model_results = model.fit(disp = False)
 
-
-	# print(model_results.fittedvalues)
-	# print(model_results.)
-
 	dynamic_forecast = model_results.get_prediction(start=int(steps))
 	mean_forecast = dynamic_forecast.predicted_mean 
 	conf_interval = dynamic_forecast.conf_int()
-
-	# print(y_truth)
-	# print('-------------------------------')
-	# print(mean_forecast)
-
 
 	mse = np.round(((mean_forecast - y_truth['Close']) ** 2).mean(),decimals = 3)
 	rmse = np.round(np.sqrt(mse),decimals = 3)
@@ -72,84 +136,6 @@ def getPredictionARIMA(dataslice,d,steps):
 	plt.legend()
 	plt.show()
 
-	return model_results
-
-
-def prediction(data):
-	# print('How would you like to continue analysis on all the data available or ')
-	print('--'*25)
-	tr_fl = True
-	while tr_fl:
-
-		tr = input("Select Training period in number of months (must be greater than 3 months)\n")
-
-		try:
-			if not int(tr) <= 3:
-
-				dataslice = data.last(str(tr)+'M').loc[:,['Close']]
-				
-
-				# print(dataslice)
-				print('--'*25)
-				print('Training Data Loaded...')
-				print('Making Data Stationary...')
-
-
-				dataslice_log = np.log(dataslice)
-
-				p_val = get_stationarity(dataslice)
-				# print(p_val)
-				
-				d = 0
-
-				while p_val > 0.05:
-					
-					d=d+1
-					
-					rolling_mean = dataslice_log.rolling(window=15).mean()
-					dataslice_log_minus_mean = dataslice_log - rolling_mean
-					dataslice_log_minus_mean.dropna(inplace=True)
-
-					dataslice_log = dataslice_log_minus_mean.copy()
-
-					p_val = get_stationarity(dataslice_log_minus_mean)
-					# print(p_val)
-					# print('d='+str(d))
-
-				d = d if d > 0 else 1
-
-				print('Selected Diffentiating Order is ='+str(d))
-				print('Applying Model on Training Data...')
-				print('--'*25)
-
-				# model = SARIMAX(dataslice, trend = 'c',order=(2,d,2))
-				# model_results = model.fit(disp = False)
-
-				steps = -30
-
-				model_results = getPredictionARIMA(dataslice,d,steps)
-				tr_fl = False
-
-			else:
-
-				raise Exception('Training period must be greater than 3')
-
-
-		except ValueError as v:
-			print('--'*25)
-			print('select proper training period...')
-			print(v)
-			print('--'*25)
-
-		except Exception as e:
-			print('--'*25)
-			print(e)
-			print('--'*25)
-
-
-
-
-
 
 	pred_fl = True
 	while pred_fl:
@@ -159,12 +145,14 @@ def prediction(data):
 				diff = (dt.strptime(pred_date,'%Y-%m-%d') - dataslice.index[-1]).days
 				# print('diff = '+str(diff))
 
+				# print(dataslice)
 				if not diff <= 0 :
 
 					forecast = model_results.get_forecast(steps = diff,dynamic = False).predicted_mean
+
+					
 					# print(forecast)
 
-					# print('yeee...')
 					fin_forecast = pd.DataFrame(forecast,columns = ['Close'])
 					# print(fin_forecast)
 
@@ -185,31 +173,70 @@ def prediction(data):
 					plt.show()
 				
 				else:
-					
-					
-					dataslice_lin = dataslice.copy()
-					dataslice_lin.reset_index()
-					dataslice_lin.index = range(len(dataslice_lin))
 
-					# print(dataslice_lin)
-					predicted_price, coeff, constant = predict_price(dataslice_lin.index.tolist(),dataslice_lin['Close'].tolist(),diff)
-
+					print('cant predict past date out of training sample..\n Use linear regression..')
 					
 					
-					print('--'*25)
-					print()
-					print ('The stock Close price for'+ pred_date +' is = ',str(predicted_price))
-					print ('The regression coefficient is ',str(coeff),", and the constant is = ", str(constant))
-					print ('Equation between dates and prices is: price = ',str(coeff),'* date + ',str(constant))
-					print()
-					print('--'*25)
-
+				
 			except Exception as e:
 				print('--'*25)
 				print(e)
 				print('--'*25)
 		else:
 			pred_fl = False
+
+	return model_results
+
+
+def prediction(data):
+	
+	print('--'*25)
+	tr_fl = True
+	while tr_fl:
+
+		tr = input("Select Training period in number of months (must be greater than 3 months)\n")
+
+		try:
+			if not int(tr) <= 3:
+
+				dataslice = data.last(str(tr)+'M').loc[:,['Close']]
+				
+				# print(dataslice)
+				print('--'*25)
+				print('Training Data Loaded...')
+
+				ch_fl = True
+				while  ch_fl:
+					ch = input('1. ARIMA Model \n2. Linear Regression \n0. Previous Menu \nPlease choose Option:')
+					if ch == '1':
+						tr_fl = False
+						getPredictionARIMA(dataslice)
+					elif ch == '2':
+						tr_fl = False
+						getPredictionLIN(dataslice)
+					elif ch == '0':
+						ch_fl = False
+					else:
+						print('--'*25)
+						print('Invalid Choice Please select from above option numbers only.')
+			else:
+				raise Exception('Training period must be greater than 3 months.')
+
+
+		except ValueError as v:
+			print('--'*25)
+			print('Please select a valid training period (e.g. 6, 12, 24, etc.)... ')
+			print(v)
+			print('--'*25)
+
+		except Exception as e:
+			print('--'*25)
+			print(e)
+			print('--'*25)
+
+
+# Applying the model to calculate predicted value based on user provided training window
+	
 
 	
 

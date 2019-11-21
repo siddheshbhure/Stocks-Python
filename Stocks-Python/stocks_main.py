@@ -23,12 +23,10 @@ def read_stock():
 	while fl == True:
 		print('--'*25)		
 		symbol = input('Please Enter stock name to proceed or \'0\' To Go back to Previous Menu..\n')
-		# symbol = symbol.isupper()?symbol:symbol.upper()
+
 		if symbol != '0':
 			
-			# print(symbol)
-			# print(complist['Symbol'].values)
-
+			# Validates value provided and ensures correct case for data fetching, tells user of incorrect / not found values
 			symbol = symbol if symbol.isupper() else symbol.upper()
 
 			if not symbol in complist['Symbol'].values:
@@ -40,7 +38,7 @@ def read_stock():
 				file_save = 'stock_data-%s.csv'%symbol
 				tick = yf.Ticker(symbol)
 
-				if not os.path.exists(file_save):
+				if not os.path.exists(file_save):			#If data is not already cached, creates the file for it.
 
 					# apikey = '6S047KHPDKJ9SI9G'
 					# newkey = 'Ye-htV-xy8cmoDMmBzSw'
@@ -58,10 +56,11 @@ def read_stock():
 					data = data.sort_values('Date')
 					data.dropna(inplace = True)
 					data.drop_duplicates(inplace = True)
+					data = data.resample('1D').pad()
 					data.to_csv(file_save)
 					
 					data.index = pd.to_datetime(data.index)
-					data = data.resample('1D').pad()
+					
 					# print('Data loading Complete...')
 					print('Data loading for '+symbol+' stock Completed...')
 					# print('Data loading for '+symbol+' '+complist.loc[(complist['Symbol'] == symbol),'Name'].astype('str')+'stock Completed...')
@@ -74,7 +73,9 @@ def read_stock():
 					data.set_index('Date',inplace = True)
 					pd.to_datetime(data.index)
 
-					if dt.strptime(data.index[-1],'%Y-%m-%d').date() == dt.now().date():
+					# When data is already present, checks for last date of data available and appends recent stock price info,
+					# by fetching only the delta data
+					if dt.strptime(data.index[-1],'%Y-%m-%d').date() == dt.now().date(): 
 						
 						print('Using Existing Data...')
 						# print(data.index[-1])
@@ -88,7 +89,7 @@ def read_stock():
 						
 					else:
 						# print('in else')
-						print('Loading partial data...')
+						print('Loading delta data to ensure complete information...')
 						start = dt.strftime(dt.strptime(data.index[-1],'%Y-%m-%d').date() ,'%Y-%m-%d')
 						end = dt.now().strftime('%Y-%m-%d')
 						
@@ -101,7 +102,7 @@ def read_stock():
 						data = data.reset_index().drop_duplicates(subset ='Date' ,keep = 'first').set_index('Date')
 
 						
-						
+						#File creation
 						data.to_csv(file_save)
 						
 						data = data.resample('1D').pad().copy()
@@ -139,7 +140,7 @@ def read_stock():
 
 
 def main():
-	# print("yeee...")
+	# Main Menu to which control is brought, whenever the user wishes to go back.
 	flag = True
 	while flag == True:
 		print('--'*25)
@@ -150,11 +151,11 @@ def main():
 		choice = input("Please choose option: ")
 
 		if choice == '2':
-			read_stock()
+			read_stock() # Data gathering, cleaning, and storing
 		elif choice == '1':
-			pass
+			pass # Takes user to NASDAQ website for ticker list reference
 		elif choice == '3':
-			pass
+			util.user_manual() # High level program overview
 		elif choice == '4':
 			flag = False
 		else:
