@@ -7,6 +7,16 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import plotly.graph_objects as go
 
+def OHLC(data,symbol):
+	try:
+
+		fig = go.Figure(data=[go.Candlestick(x=data.index,open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
+		fig.update_layout(title='OHLC Graph for '+symbol, yaxis_title=symbol+' Stock Value',xaxis_rangeslider_visible=False)
+		fig.show()
+
+	except Exception as e:
+		print(e)
+
 def user_manual():
 	print('This program lets you perform descriptive and predictive analysis on a stock of your choice, that is available on NASDAQ.')
 	print("""Here's what we got on the Main Menu:
@@ -197,10 +207,11 @@ def get_timerange_graph(data):
 	dtfl = True
 	while dtfl:
 		print('--'*25)
-		fr = input('Please Enter the FROM date in yyyy-mm-dd format \'0\' to go back to previous menu \n')
-		if fr !='0':
+		fr = input('Please Enter the FROM date in yyyy-mm-dd format \n\'A\' For Fetch Entire Data \n\'0\' to go back to previous menu \n')
+		if fr not in ['0','A']:
 
-			to = input('Please Enter the TO date in yyyy-mm-dd format \'0\' to go back to previous menu\n')
+			print('--'*25)
+			to = input('Please Enter the TO date in yyyy-mm-dd format \n\'0\' to go back to previous menu\n')
 
 			if to != '0':
 
@@ -229,5 +240,9 @@ def get_timerange_graph(data):
 			else:
 
 				dtfl = False
+		elif fr == 'A':
+			dtfl = False
+			dataslice = data.copy()
+			stats_desc(dataslice)
 		else:
 			dtfl = False

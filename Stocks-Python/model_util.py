@@ -20,6 +20,7 @@ def get_stationarity(timeseries):
 
     return result[1]
 
+# Incorportes Linear regression to provide stock value prediction for date entered
 def getPredictionLIN(dataslice):
 
 	try:
@@ -42,7 +43,7 @@ def getPredictionLIN(dataslice):
 			pred_date = input('Enter a date in YYYY-MM-DD format for which you would like stock prediction. \'0\' to go back to previous menu.\n')
 			if pred_date != '0':
 				diff = (dt.strptime(pred_date,'%Y-%m-%d') - dataslice.index[0]).days
-				print('diff = '+str(diff))
+				# print('diff = '+str(diff))
 
 				predicted_price =linear_mod.predict(np.array(diff).reshape(1, 1))
 
@@ -53,7 +54,7 @@ def getPredictionLIN(dataslice):
 				print()
 				print ('The stock Close price for'+ pred_date +' is = ',str(predicted_price[0][0]))
 				print ('The regression coefficient is ',str(linear_mod.coef_[0][0]),", and the constant is = ", str(linear_mod.intercept_[0]))
-				print ('Equation between dates and prices is: price = ',str(linear_mod.coef_[0][0]),'* date + ',str(inear_mod.intercept_[0]))
+				print ('Equation between dates and prices is: price = ',str(linear_mod.coef_[0][0]),'* date + ',str(linear_mod.intercept_[0]))
 				print()
 				print('--'*25)
 			else:
@@ -71,14 +72,12 @@ def getPredictionLIN(dataslice):
 	# print(dataslice_lin)
 	# predicted_price, coeff, constant = predict_price(dataslice_lin.index.tolist(),dataslice_lin['Close'].tolist(),diff)
 
-	
-	
-	
 
 
 # Incorportes ARIMA model to provide stock value prediction for date entered
 def getPredictionARIMA(dataslice):
 
+	print('--'*25)
 	print('Making Data Stationary...')
 	dataslice_log = np.log(dataslice)
 	p_val = get_stationarity(dataslice)
@@ -100,7 +99,7 @@ def getPredictionARIMA(dataslice):
 
 	d = d if d > 0 else 1
 
-	print('Selected Diffentiating Order is ='+str(d))
+	print('Selected Diffentiating Order is = '+str(d))
 	print('Applying Model on Training Data...')
 	print('--'*25)
 
@@ -215,6 +214,7 @@ def prediction(data):
 						tr_fl = False
 						getPredictionLIN(dataslice)
 					elif ch == '0':
+						tr_fl = False
 						ch_fl = False
 					else:
 						print('--'*25)
